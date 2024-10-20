@@ -1,14 +1,21 @@
-# Czyszczenie pamięci RAM
+# Ustawienie preferencji błędów
+$ErrorActionPreference = "Stop"
+
+# Funkcja do czyszczenia pamięci RAM
 function Clear-RAM {
     Write-Host "Oczyszczanie pamięci RAM..."
-    [System.GC]::Collect()
-    [System.GC]::WaitForPendingFinalizers()
-    Write-Host "Pamięć RAM oczyszczona."
+    try {
+        [System.GC]::Collect()
+        [System.GC]::WaitForPendingFinalizers()
+        Write-Host "Pamięć RAM oczyszczona."
+    } catch {
+        Write-Warning "Nie udało się oczyścić pamięci RAM. Błąd: $_"
+    }
 }
 
 Clear-RAM
 
-# Wyłączenie zbędnych usług:
+# Funkcja do wyłączenia zbędnych usług
 function Disable-UnnecessaryServices {
     Write-Host "Wyłączanie zbędnych usług..."
     $services = @(
@@ -17,37 +24,53 @@ function Disable-UnnecessaryServices {
         "MapsBroker"
     )
     foreach ($service in $services) {
-        Set-Service -Name $service -StartupType Disabled
-        Write-Host "Usługa $service wyłączona."
+        try {
+            Set-Service -Name $service -StartupType Disabled
+            Write-Host "Usługa $service wyłączona."
+        } catch {
+            Write-Warning "Nie udało się wyłączyć usługi $service. Błąd: $_"
+        }
     }
 }
 
 Disable-UnnecessaryServices
 
-# Zmniejszenie liczby aplikacji uruchamianych przy starcie:
-
+# Funkcja do wyłączania aplikacji uruchamianych przy starcie
 function Disable-StartupApps {
     Write-Host "Wyłączanie aplikacji uruchamianych przy starcie..."
-    $startupApps = Get-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
-    foreach ($app in $startupApps.PSObject.Properties) {
-        Remove-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name $app.Name
-        Write-Host "Aplikacja $($app.Name) wyłączona przy starcie."
+    try {
+        $startupApps = Get-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
+        foreach ($app in $startupApps.PSObject.Properties) {
+            try {
+                Remove-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name $app.Name
+                Write-Host "Aplikacja $($app.Name) wyłączona przy starcie."
+            } catch {
+                Write-Warning "Nie udało się wyłączyć aplikacji $($app.Name). Błąd: $_"
+            }
+        }
+    } catch {
+        Write-Warning "Nie udało się pobrać listy aplikacji uruchamianych przy starcie. Błąd: $_"
     }
 }
 
 Disable-StartupApps
 
-# Ustawienie pliku stronicowania na określoną wartość:
-
+# Funkcja do ustawienia pliku stronicowania na określoną wartość za pomocą rejestru systemowego
 function Set-PagingFileSize {
     param (
-        [int]$InitialSize = 1024,
-        [int]$MaximumSize = 4096
+        [int]$InitialSize = 2048,
+        [int]$MaximumSize = 8192
     )
     
-    Write-Host "Ustawianie pliku stronicowania na określoną wartość..."
-    wmic pagefileset where name="C:\\pagefile.sys" set InitialSize=$InitialSize,MaximumSize=$MaximumSize
-    Write-Host "Plik stronicowania ustawiony na $InitialSize MB (początkowy) i $MaximumSize MB (maksymalny)."
+    Write-Host "Ustawianie pliku stronicowania na określoną wartość za pomocą rejestru systemowego..."
+    try {
+        $pagefilePath = "C:\\pagefile.sys $InitialSize $MaximumSize"
+        Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" -Name "PagingFiles" -Value $pagefilePath
+        Write-Host "Plik stronicowania ustawiony na $InitialSize MB (początkowy) i $MaximumSize MB (maksymalny)."
+    } catch {
+        Write-Warning "Nie udało się ustawić pliku stronicowania. Błąd: $_"
+    }
 }
 
 Set-PagingFileSize -InitialSize 2048 -MaximumSize 8192
+
