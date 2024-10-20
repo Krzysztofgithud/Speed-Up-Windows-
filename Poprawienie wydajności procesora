@@ -1,0 +1,63 @@
+# Wyłączenie zbędnych usług
+function Disable-UnnecessaryServices {
+    Write-Host "Wyłączanie zbędnych usług..."
+    $services = @(
+        "DiagTrack",
+        "dmwappushservice",
+        "MapsBroker"
+    )
+    foreach ($service in $services) {
+        Set-Service -Name $service -StartupType Disabled
+        Write-Host "Usługa $service wyłączona."
+    }
+}
+
+Disable-UnnecessaryServices
+
+# Zmniejszenie liczby aplikacji uruchamianych przy starcie:
+function Disable-StartupApps {
+    Write-Host "Wyłączanie aplikacji uruchamianych przy starcie..."
+    $startupApps = Get-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
+    foreach ($app in $startupApps.PSObject.Properties) {
+        Remove-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name $app.Name
+        Write-Host "Aplikacja $($app.Name) wyłączona przy starcie."
+    }
+}
+
+Disable-StartupApps
+
+# Ustawienie opcji zasilania na wysoką wydajność
+
+function Set-HighPerformancePowerPlan {
+    Write-Host "Ustawianie opcji zasilania na wysoką wydajność..."
+    powercfg -setactive SCHEME_MIN
+    Write-Host "Opcje zasilania ustawione na wysoką wydajność."
+}
+
+Set-HighPerformancePowerPlan
+
+# Wyłączenie efektów wizualnych:
+function Disable-VisualEffects {
+    Write-Host "Wyłączanie efektów wizualnych..."
+    $PerformanceOptions = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
+    Set-ItemProperty -Path $PerformanceOptions -Name "VisualFXSetting" -Value 2
+    $VisualEffects = @(
+        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarAnimations",
+        "HKCU:\Control Panel\Desktop\WindowMetrics\MinAnimate"
+    )
+    foreach ($Effect in $VisualEffects) {
+        Set-ItemProperty -Path $Effect -Name "(default)" -Value 0
+    }
+    Write-Host "Efekty wizualne wyłączone."
+}
+
+Disable-VisualEffects
+
+# Aktualizacja sterowników:
+function Update-Drivers {
+    Write-Host "Aktualizacja sterowników..."
+    Start-Process "ms-settings:windowsupdate" -ArgumentList "/update" -Wait
+    Write-Host "Sterowniki zaktualizowane."
+}
+
+Update-Drivers
