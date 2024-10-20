@@ -1,0 +1,43 @@
+# Ustawienie preferencji błędów
+$ErrorActionPreference = "Stop"
+
+# Funkcja do wyłączenia efektów wizualnych
+function Disable-VisualEffects {
+    Write-Host "Wyłączanie efektów wizualnych..."
+    $PerformanceOptions = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
+    Set-ItemProperty -Path $PerformanceOptions -Name "VisualFXSetting" -Value 2
+    $VisualEffects = @(
+        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarAnimations",
+        "HKCU:\Control Panel\Desktop\WindowMetrics\MinAnimate"
+    )
+    foreach ($Effect in $VisualEffects) {
+        Set-ItemProperty -Path $Effect -Name "(default)" -Value 0
+    }
+    Write-Host "Efekty wizualne wyłączone."
+}
+
+# Funkcja do automatycznego oczyszczania pamięci RAM
+function Clear-RAM {
+    Write-Host "Oczyszczanie pamięci RAM..."
+    [System.GC]::Collect()
+    [System.GC]::WaitForPendingFinalizers()
+    Write-Host "Pamięć RAM oczyszczona."
+}
+
+# Funkcja do aktualizacji wszystkich aplikacji
+function Update-Applications {
+    Write-Host "Aktualizowanie zainstalowanych aplikacji..."
+    Start-Process "powershell" -ArgumentList "winget upgrade --all" -Wait
+    Write-Host "Aplikacje zaktualizowane."
+}
+
+# Wykonanie wszystkich funkcji optymalizacyjnych
+Clear-Cache
+Remove-TemporaryFiles
+Disable-UnnecessaryServices
+Defragment-Disk
+Disable-VisualEffects
+Clear-RAM
+Update-Applications
+
+Write-Host "Optymalizacja systemu Windows 11 zakończona pomyślnie!"
