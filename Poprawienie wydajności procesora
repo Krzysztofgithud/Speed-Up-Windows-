@@ -1,4 +1,7 @@
-# Wyłączenie zbędnych usług
+# Ustawienie preferencji błędów
+$ErrorActionPreference = "Stop"
+
+# Funkcja do wyłączenia zbędnych usług
 function Disable-UnnecessaryServices {
     Write-Host "Wyłączanie zbędnych usług..."
     $services = @(
@@ -7,57 +10,75 @@ function Disable-UnnecessaryServices {
         "MapsBroker"
     )
     foreach ($service in $services) {
-        Set-Service -Name $service -StartupType Disabled
-        Write-Host "Usługa $service wyłączona."
+        try {
+            Set-Service -Name $service -StartupType Disabled
+            Write-Host "Usługa $service wyłączona."
+        } catch {
+            Write-Warning "Nie udało się wyłączyć usługi $service. Błąd: $_"
+        }
     }
 }
 
-Disable-UnnecessaryServices
-
-# Zmniejszenie liczby aplikacji uruchamianych przy starcie:
+# Funkcja do wyłączania aplikacji uruchamianych przy starcie
 function Disable-StartupApps {
     Write-Host "Wyłączanie aplikacji uruchamianych przy starcie..."
-    $startupApps = Get-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
-    foreach ($app in $startupApps.PSObject.Properties) {
-        Remove-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name $app.Name
-        Write-Host "Aplikacja $($app.Name) wyłączona przy starcie."
+    try {
+        $startupApps = Get-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
+        foreach ($app in $startupApps.PSObject.Properties) {
+            Remove-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name $app.Name
+            Write-Host "Aplikacja $($app.Name) wyłączona przy starcie."
+        }
+    } catch {
+        Write-Warning "Nie udało się wyłączyć niektórych aplikacji. Błąd: $_"
     }
 }
 
-Disable-StartupApps
-
-# Ustawienie opcji zasilania na wysoką wydajność
-
+# Funkcja do ustawienia opcji zasilania na wysoką wydajność
 function Set-HighPerformancePowerPlan {
     Write-Host "Ustawianie opcji zasilania na wysoką wydajność..."
-    powercfg -setactive SCHEME_MIN
-    Write-Host "Opcje zasilania ustawione na wysoką wydajność."
+    try {
+        powercfg -setactive SCHEME_MIN
+        Write-Host "Opcje zasilania ustawione na wysoką wydajność."
+    } catch {
+        Write-Warning "Nie udało się ustawić wysokiej wydajności. Błąd: $_"
+    }
 }
 
-Set-HighPerformancePowerPlan
-
-# Wyłączenie efektów wizualnych:
+# Funkcja do wyłączenia efektów wizualnych
 function Disable-VisualEffects {
     Write-Host "Wyłączanie efektów wizualnych..."
-    $PerformanceOptions = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
-    Set-ItemProperty -Path $PerformanceOptions -Name "VisualFXSetting" -Value 2
-    $VisualEffects = @(
-        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarAnimations",
-        "HKCU:\Control Panel\Desktop\WindowMetrics\MinAnimate"
-    )
-    foreach ($Effect in $VisualEffects) {
-        Set-ItemProperty -Path $Effect -Name "(default)" -Value 0
+    try {
+        $PerformanceOptions = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
+        Set-ItemProperty -Path $PerformanceOptions -Name "VisualFXSetting" -Value 2
+        $VisualEffects = @(
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarAnimations",
+            "HKCU:\Control Panel\Desktop\WindowMetrics\MinAnimate"
+        )
+        foreach ($Effect in $VisualEffects) {
+            Set-ItemProperty -Path $Effect -Name "(default)" -Value 0
+        }
+        Write-Host "Efekty wizualne wyłączone."
+    } catch {
+        Write-Warning "Nie udało się wyłączyć efektów wizualnych. Błąd: $_"
     }
-    Write-Host "Efekty wizualne wyłączone."
 }
 
-Disable-VisualEffects
-
-# Aktualizacja sterowników:
+# Funkcja do aktualizacji sterowników
 function Update-Drivers {
     Write-Host "Aktualizacja sterowników..."
-    Start-Process "ms-settings:windowsupdate" -ArgumentList "/update" -Wait
-    Write-Host "Sterowniki zaktualizowane."
+    try {
+        Start-Process "ms-settings:windowsupdate" -ArgumentList "/update" -Wait
+        Write-Host "Sterowniki zaktualizowane."
+    } catch {
+        Write-Warning "Nie udało się zaktualizować sterowników. Błąd: $_"
+    }
 }
 
+# Wykonanie wszystkich funkcji optymalizacyjnych
+Disable-UnnecessaryServices
+Disable-StartupApps
+Set-HighPerformancePowerPlan
+Disable-VisualEffects
 Update-Drivers
+
+Write-Host "Optymalizacja systemu Windows 11 zakończona pomyślnie!"
