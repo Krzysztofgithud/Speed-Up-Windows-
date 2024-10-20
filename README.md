@@ -44,3 +44,58 @@ Disable-UnnecessaryServices
 Defragment-Disk
 
 Write-Host "Optymalizacja systemu Windows 11 zakończona pomyślnie!"
+
+# Czyszczenie pamięci RAM
+function Clear-RAM {
+    Write-Host "Oczyszczanie pamięci RAM..."
+    [System.GC]::Collect()
+    [System.GC]::WaitForPendingFinalizers()
+    Write-Host "Pamięć RAM oczyszczona."
+}
+
+Clear-RAM
+
+# Wyłączenie zbędnych usług:
+function Disable-UnnecessaryServices {
+    Write-Host "Wyłączanie zbędnych usług..."
+    $services = @(
+        "DiagTrack",
+        "dmwappushservice",
+        "MapsBroker"
+    )
+    foreach ($service in $services) {
+        Set-Service -Name $service -StartupType Disabled
+        Write-Host "Usługa $service wyłączona."
+    }
+}
+
+Disable-UnnecessaryServices
+
+# Zmniejszenie liczby aplikacji uruchamianych przy starcie:
+
+function Disable-StartupApps {
+    Write-Host "Wyłączanie aplikacji uruchamianych przy starcie..."
+    $startupApps = Get-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
+    foreach ($app in $startupApps.PSObject.Properties) {
+        Remove-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name $app.Name
+        Write-Host "Aplikacja $($app.Name) wyłączona przy starcie."
+    }
+}
+
+Disable-StartupApps
+
+# Ustawienie pliku stronicowania na określoną wartość:
+
+function Set-PagingFileSize {
+    param (
+        [int]$InitialSize = 1024,
+        [int]$MaximumSize = 4096
+    )
+    
+    Write-Host "Ustawianie pliku stronicowania na określoną wartość..."
+    wmic pagefileset where name="C:\\pagefile.sys" set InitialSize=$InitialSize,MaximumSize=$MaximumSize
+    Write-Host "Plik stronicowania ustawiony na $InitialSize MB (początkowy) i $MaximumSize MB (maksymalny)."
+}
+
+Set-PagingFileSize -InitialSize 2048 -MaximumSize 8192
+
